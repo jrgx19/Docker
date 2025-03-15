@@ -1,4 +1,4 @@
-This is a work in progress as I sttempt to clean up my current "production" HomeLab setup. 
+This is a work in progress as I attempt to clean up my current "production" HomeLab setup. 
 
 This setup incorporates the use of a main/common/system-wide .env file and a per stack .env. Due
 to how docker compose handles external .env files, the following command is required to start
