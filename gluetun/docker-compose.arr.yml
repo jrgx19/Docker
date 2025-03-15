@@ -1,0 +1,63 @@
+services:
+  arr-gluetun:
+    image: qmcgaw/gluetun:${GLUETUN_DOCKER_TAG-latest}
+    container_name: arr-gluetun
+    security_opt:
+      - no-new-privileges:true    
+    env_file:
+      - .env
+      - ../.env
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    volumes:
+      - ./config:/gluetun
+    networks:
+      - proxy
+    secrets:
+      - gluetun_user
+      - gluetun_password
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      #tor
+      - traefik.http.routers.gluetun-tor-rtr.entrypoints=websecure
+      - traefik.http.routers.gluetun-tor-rtr.rule=Host(`tor.$DOMAINNAME`)
+      - traefik.http.routers.gluetun-tor-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.gluetun-tor-rtr.service=tor-browser-svc
+      - traefik.http.services.tor-browser-svc.loadbalancer.server.port=6901
+      #qbittorrent
+      - traefik.http.routers.gluetun-qbittorrent-rtr.entrypoints=websecure
+      - traefik.http.routers.gluetun-qbittorrent-rtr.rule=Host(`qbittorrent.$DOMAINNAME`)
+      - traefik.http.routers.gluetun-qbittorrent-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.gluetun-qbittorrent-rtr.service=qbittorrent-svc
+      - traefik.http.services.qbittorrent-svc.loadbalancer.server.port=${WEBUI_PORT-8080} 
+        #transmission
+      - traefik.http.routers.gluetun-transmission-rtr.entrypoints=websecure
+      - traefik.http.routers.gluetun-transmission-rtr.rule=Host(`transmission.$DOMAINNAME`)
+      - traefik.http.routers.gluetun-transmission-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.gluetun-transmission-rtr.service=transmission-svc
+      - traefik.http.services.transmission-svc.loadbalancer.server.port=${TRANSMISSION_WEB_HOME-9091}
+        #sabnzbd
+      - traefik.http.routers.gluetun-sabnzbd-rtr.entrypoints=websecure
+      - traefik.http.routers.gluetun-sabnzbd-rtr.rule=Host(`downloads.$DOMAINNAME`) || Host(`download.$DOMAINNAME`)      
+      - traefik.http.routers.gluetun-sabnzbd-rtr.middlewares=chain-no-auth@file      
+      - traefik.http.routers.gluetun-sabnzbd-rtr.service=sabnzbd-svc
+      - traefik.http.services.sabnzbd-svc.loadbalancer.server.port=${SABNZBD_PORT-8080}       
+        #JDOWNLOADER
+      - traefik.http.routers.gluetun-jdownloader-rtr.entrypoints=websecure
+      - traefik.http.routers.gluetun-jdownloader-rtr.rule=Host(`jdownloader.$DOMAINNAME`)
+      - traefik.http.routers.gluetun-jdownloader-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.gluetun-jdownloader-rtr.service=jdownloader-svc
+      - traefik.http.services.jdownloader-svc.loadbalancer.server.port=5800
+
+secrets:
+  gluetun_user:
+    file: ./gluetun_user
+  gluetun_password:
+    file: ./gluetun_password    
+
+networks:
+  proxy:
+    external: true

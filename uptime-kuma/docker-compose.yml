@@ -1,0 +1,27 @@
+services:
+  uptime-kuma:
+    container_name: uptime-kuma
+    image: louislam/uptime-kuma:${UPTIMEKUMA_DOCKER_TAG-latest}
+    security_opt:
+      - no-new-privileges:true    
+    env_file:
+      - .env
+      - ../.env     
+    volumes:
+      - ./config:/app/data
+    networks:
+      - proxy
+    # ports:
+    #   - ${UPTIMEKUMA_PORT-3001}:3001
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.uptime-kuma-rtr.entrypoints=websecure
+      - traefik.http.routers.uptime-kuma-rtr.rule=Host(`kuma.$DOMAINNAME`)
+      - traefik.http.routers.uptime-kuma-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.uptime-kuma-rtr.service=uptime-kuma-svc
+      - traefik.http.services.uptime-kuma-svc.loadbalancer.server.port=3001
+
+networks:
+  proxy:
+    external: true      

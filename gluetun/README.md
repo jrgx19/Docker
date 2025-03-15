@@ -1,0 +1,2 @@
+If connecting any arr stack service, the hostname for sabnzbd, transmission or qbit will be "arr-gluetun". The port nuber is the service's internal port number. 
+This is because the "arr-gluetun" service is the one exposing these ports

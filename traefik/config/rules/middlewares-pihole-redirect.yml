@@ -1,0 +1,7 @@
+http:
+  middlewares:
+    pihole-redirect:
+      redirectRegex:
+        permanent: true
+        regex: ^https://pihole.{{env "DOMAINNAME"}}/?$
+        replacement: https://pihole.{{env "DOMAINNAME"}}/admin      

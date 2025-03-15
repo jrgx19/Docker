@@ -1,0 +1,59 @@
+services:
+  ollama:
+    container_name: ollama  
+    image: ollama/ollama:${OLLAMA_DOCKER_TAG-latest}
+    security_opt:
+    - no-new-privileges:true      
+    env_file:
+      - .env
+      - ../.env       
+    volumes:
+      - ./ollama:/root/.ollama
+      - ./ollama-models.sh:/entrypoint.sh
+    networks:
+      - ollama        
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu
+    entrypoint: ["/usr/bin/bash", "/entrypoint.sh"] #use the scrip in the same folder to ensure your desired models are downloaded and available on start up
+    restart: unless-stopped
+
+  open-webui:
+    container_name: open-webui  
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG-main}    
+    security_opt:
+    - no-new-privileges:true      
+    env_file:
+      - .env
+      - ../.env  
+    volumes:
+      - ./open-webui:/app/backend/data
+    networks:
+      - ollama  
+      - proxy    
+    # ports:
+    #   - ${OPEN_WEBUI_PORT-3000}:8080
+    depends_on:
+      - ollama
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.gpt-rtr.entrypoints=websecure
+      - traefik.http.routers.gpt-rtr.rule=Host(`gpt.$DOMAINNAME`)
+      - traefik.http.routers.gpt-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.gpt-rtr.service=gpt-svc
+      - traefik.http.services.gpt-svc.loadbalancer.server.port=8080    
+
+networks:
+  ollama:
+    name: ollama
+    ipam:
+      config:
+        - subnet: 10.10.0.13/30
+  proxy:
+    external: true

@@ -1,0 +1,109 @@
+services:
+  authentik:
+    container_name: authentik
+    extends:
+      service: authentik-worker
+    command: server
+    user: ${PUID}:${PGID}
+    networks:
+      - proxy
+      - authentik
+    # ports:
+    #   - 9000:9000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.authentik-rtr.entrypoints=websecure
+      - traefik.http.routers.authentik-rtr.rule=Host(`authentik.$DOMAINNAME`)
+      - traefik.http.routers.authentik-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.authentik-rtr.service=authentik-svc
+      - traefik.http.services.authentik-svc.loadbalancer.server.port=9000
+      - traefik.http.routers.authentik-output-rtr.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${DOMAINNAME}`) && PathPrefix(`/outpost.goauthentik.io/`)
+
+  authentik-worker:
+    container_name: authentik-worker
+    image: ghcr.io/goauthentik/server:${AUTHENTIK_DOCKER_TAG-latest}
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env
+    networks:
+      - proxy
+      - authentik
+      - socket_proxy
+    command: worker
+    user: root
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config/media:/media
+      - ./config/custom-templates:/templates
+      # - ./config/geoip/data:/geoip # requires geoipupdate
+    secrets:
+      - secret_key
+      - postgresql_password  
+    restart: unless-stopped
+
+  redis:
+    image: docker.io/library/redis:${REDIS_DOCKER_TAG-alpine}
+    container_name: authentik-redis
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env   
+    command: --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    networks:
+      - authentik
+    volumes:
+      - ./config/redis:/data    
+    restart: unless-stopped
+
+  postgresql:
+    container_name: authentik-postgresql
+    image: postgres:${PG_DOCKER_TAG-'16-alpine'}
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env   
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 5s
+    networks:
+      - authentik
+    volumes:
+      - ./config/postgresql:/var/lib/postgresql/data
+    secrets:
+      - postgresql_password
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+  socket_proxy:
+    external: true
+  authentik:
+    name: authentik
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.10.0.248/29
+
+secrets:
+  postgresql_password:
+    file: ./postgresql_password
+  secret_key:
+    file: ./secret_key

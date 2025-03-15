@@ -1,0 +1,26 @@
+http:
+  routers:
+    proxmox-rtr:
+      rule: "Host(`proxmox.{{env "DOMAINNAME"}}`) || Host(`pve.{{env "DOMAINNAME"}}`)"
+      entryPoints:
+        - websecure
+      middlewares:
+        - chain-no-auth
+      service: 
+        proxmox-svc
+  services:
+    proxmox-svc:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: "pve"
+        sticky:
+         cookie: {}        
+        servers:
+          - url: "https://IP_ADDRESS_SERVER1:8006/"
+          - url: "https://IP_ADDRESS_SERVER2:8006/"
+          - url: "https://IP_ADDRESS_SERVER3:8006/"
+ 
+  serversTransports:
+    pve:
+      insecureSkipVerify: true
+

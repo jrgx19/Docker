@@ -1,0 +1,33 @@
+services:
+  diun:
+    container_name: diun
+    image: crazymax/diun:${DIUN_DOCKER_TAG-latest}
+    security_opt:
+    - no-new-privileges:true    
+    command: serve
+    env_file:
+      - .env
+      - ../.env    
+    volumes:
+    - ./config:/data
+    networks:
+      - socket_proxy
+      - diun
+    secrets:
+      - dium_webhook      
+    restart: unless-stopped
+    labels:
+      - diun.enable=true
+
+secrets:
+  dium_webhook:
+    file: ./dium_webhook
+
+networks:
+  socket_proxy:
+    external: true
+  diun:
+    name: diun
+    ipam:
+      config:
+        - subnet: 10.10.0.12/31

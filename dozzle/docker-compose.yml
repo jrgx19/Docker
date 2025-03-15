@@ -1,0 +1,28 @@
+services:
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:${DOZZLE_DOCKER_TAG-latest}
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env         
+    networks:
+      - proxy
+      - socket_proxy
+    # ports:
+    #   - ${DOZZLE_PORT-8080}:8080
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dozzle-rtr.entrypoints=websecure
+      - traefik.http.routers.dozzle-rtr.rule=Host(`dozzle.$DOMAINNAME`)
+      - traefik.http.routers.dozzle-rtr.middlewares=chain-authentik@file
+      - traefik.http.routers.dozzle-rtr.service=dozzle-svc
+      - traefik.http.services.dozzle-svc.loadbalancer.server.port=8080
+
+networks:
+  proxy:
+    external: true
+  socket_proxy:
+    external: true      

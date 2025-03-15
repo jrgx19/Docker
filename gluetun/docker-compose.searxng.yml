@@ -1,0 +1,39 @@
+services:
+  searxng-gluetun:
+    image: qmcgaw/gluetun:${GLUETUN_DOCKER_TAG-latest}
+    container_name: searxng-gluetun
+    security_opt:
+      - no-new-privileges:true    
+    env_file:
+      - .env
+      - ../.env
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    volumes:
+      - ./config:/gluetun
+    networks:
+      - proxy
+    secrets:
+      - gluetun_user
+      - gluetun_password
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+       #searxng
+      - traefik.http.routers.gluetun-searxng-rtr.entrypoints=websecure
+      - traefik.http.routers.gluetun-searxng-rtr.rule=Host(`search.$DOMAINNAME`)
+      - traefik.http.routers.gluetun-searxng-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.gluetun-searxng-rtr.service=searxng-svc
+      - traefik.http.services.searxng-svc.loadbalancer.server.port=8080
+
+secrets:
+  gluetun_user:
+    file: ./gluetun_user
+  gluetun_password:
+    file: ./gluetun_password    
+
+networks:
+  proxy:
+    external: true

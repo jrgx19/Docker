@@ -1,0 +1,65 @@
+include:
+  - ../gluetun/docker-compose.searxng.yml
+services:
+  searxng:
+    container_name: searxng
+    image: docker.io/searxng/searxng:${SEARXNG_DOCKER_TAG-latest}
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      searxng-gluetun:
+        condition: service_healthy      
+    env_file:
+      - .env
+      - ../.env
+    network_mode: "service:searxng-gluetun"         
+    volumes:
+      - ./config:/etc/searxng:rw
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+    restart: unless-stopped
+
+  searxng-redis:
+    container_name: searxng-redis
+    image: docker.io/valkey/valkey:${REDIS_DOCKER_TAG-latest}
+    security_opt:
+      - no-new-privileges:true   
+    depends_on:
+      searxng-gluetun:
+        condition: service_healthy  
+    env_file:
+      - .env
+      - ../.env      
+    command: valkey-server --save 30 1 --loglevel warning
+    volumes:
+      - valkey-data2:/data
+    network_mode: "service:searxng-gluetun"         
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"    
+    restart: unless-stopped
+
+secrets:
+  searxng_secret:
+    file: ./searxng_secret
+
+volumes:
+  valkey-data2:    
+

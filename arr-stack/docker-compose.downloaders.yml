@@ -1,0 +1,52 @@
+include:
+  - ../gluetun/docker-compose.arr.yml
+
+services:
+  sabnzbd:
+    extends:
+      file: ./extends.yml
+      service: common
+    image: lscr.io/linuxserver/sabnzbd:${SABNZB_DOCKER_TAG-latest}
+    container_name: sabnzbd
+    volumes:
+      - ./sabnzbd:/config
+      - /media/downloads/data/complete:/data/complete
+      - /media/downloads/data/incomplete:/data/incomplete
+    #after first initialization, you might get a hostnmame error on the webui, just restart the container
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+    - |
+      sed -i -e "s/^host_whitelist *=.*$/host_whitelist = ${SABNZBD_HOST_WHITELIST} /g" /config/sabnzbd.ini
+      python3 /app/sabnzbd/SABnzbd.py --config-file /config --server :${SABNZBD_PORT}
+
+  qbittorrent:
+    extends:
+      file: ./extends.yml
+      service: common  
+    image: lscr.io/linuxserver/qbittorrent:${QBITTORRENT_DOCKER_TAG-latest}
+    container_name: qbittorrent
+    volumes:
+      - ./qbittorrent:/config
+      - /media/downloads/torrent/complete:/data/downloads
+      - /media/downloads/torrent/incomplete:/data/incomplete
+      - /media/downloads/torrent/torrent_watch:/torrent_watch
+    healthcheck: # https://github.com/qdm12/gluetun/issues/641#issuecomment-933856220
+      test: "curl -sf https://google.com  || exit 1"
+      interval: 1m
+      timeout: 10s
+      retries: 1
+
+  transmission:
+    extends:
+      file: ./extends.yml
+      service: common  
+    image: lscr.io/linuxserver/transmission:${TRANSMISSION_DOCKER_TAG-latest}
+    container_name: transmission
+    volumes:
+      - ./transmission:/config
+      - /media/downloads/torrent/complete:/data/downloads
+      - /media/downloads/torrent/incomplete:/data/incomplete
+      - /media/downloads/torrent/torrent_watch:/torrent_watch
+    secrets:
+      - transmission_user
+      - transmission_pass  

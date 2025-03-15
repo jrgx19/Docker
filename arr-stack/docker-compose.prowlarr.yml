@@ -1,0 +1,24 @@
+services:
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:${PROWLARR_DOCKER_TAG-latest}
+    container_name: prowlarr
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env   
+    networks:
+      - proxy
+    # ports:
+    #   - ${PROWLARR_PORT-9696}:9696
+    volumes:
+      - ./prowlarr:/config
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prowlarr-rtr.entrypoints=websecure
+      - traefik.http.routers.prowlarr-rtr.rule=Host(`prowlarr.$DOMAINNAME`)
+      - traefik.http.routers.prowlarr-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.prowlarr-rtr.service=prowlarr-svc
+      - traefik.http.services.prowlarr-svc.loadbalancer.server.port=9696 
+    restart: unless-stopped

@@ -1,0 +1,2 @@
+# This only applies to cloudflare, it will be different for your provider.
+# details can be found at https://doc.traefik.io/traefik/user-guides/docker-compose/acme-dns/

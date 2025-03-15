@@ -1,0 +1,21 @@
+include:
+
+# MEDIA ORGANIZATION
+  - ./docker-compose.sonarr.yml
+  - ./docker-compose.radarr.yml
+  - ./docker-compose.prowlarr.yml
+  - ./docker-compose.overseerr.yml
+
+# DOWNLOADERS
+  - ./docker-compose.downloaders.yml
+
+networks:
+  proxy:
+    external: true
+
+secrets:
+  transmission_user:
+    file: ./transmission_user
+  transmission_pass:
+    file: ./transmission_pass
+    

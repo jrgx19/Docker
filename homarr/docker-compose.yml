@@ -1,0 +1,30 @@
+services:
+  homarr:
+    container_name: homarr
+    image: ghcr.io/homarr-labs/homarr:${HOMARR_DOCKER_TAG-latest}
+    security_opt:
+    - no-new-privileges:true       
+    env_file:
+      - .env
+      - ../.env  
+    volumes:
+      - ./config:/appdata
+    networks:
+      - proxy
+      - socket_proxy
+    # ports:
+    #   - ${HOMARR_PORT-7575}:7575
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.homarr-rtr.entrypoints=websecure
+      - traefik.http.routers.homarr-rtr.rule=Host(`homarr.$DOMAINNAME`)
+      - traefik.http.routers.homarr-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.homarr-rtr.service=homarr-svc
+      - traefik.http.services.homarr-svc.loadbalancer.server.port=7575
+
+networks:
+  proxy:
+    external: true
+  socket_proxy:
+    external: true

@@ -1,0 +1,56 @@
+services:
+  plex:
+    container_name: plex
+    image: lscr.io/linuxserver/plex:${PLEX_DOCKER_TAG-latest}
+    security_opt:
+    - no-new-privileges:true       
+    env_file:
+      - .env
+      - ../.env
+    volumes:
+      - ./config:/config
+      - /media/media/streams/tv:/tv
+      - /media/media/streams/movies:/movies
+      - /dev/shm:/transcode #cache transcoding in RAM for better performance. Ensure the '/transcode' directory is selected in the application settings
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu      
+    networks:
+      - proxy
+    # container is recommended to be run in host mode
+    # if running in bridge mode, the following ports may need to be exposed
+    # https://support.plex.tv/articles/201543147-what-network-ports-do-i-need-to-allow-through-my-firewall/
+    # ports:
+    #   - 32400:32400
+    #   - 1900:1900/udp
+    #   - 5353:5353/udp
+    #   - 8324:8324
+    #   - 32410:32410/udp
+    #   - 32412:32412/udp
+    #   - 32413:32413/udp
+    #   - 32414:32414/udp
+    #   - 32469:32469            
+    secrets:
+      - plex_claim
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.plex-rtr.entrypoints=websecure
+      - traefik.http.routers.plex-rtr.rule=Host(`plex.$DOMAINNAME`)
+      - traefik.http.routers.plex-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.plex-rtr.service=plex-svc
+      - traefik.http.services.plex-svc.loadbalancer.server.port=32400
+secrets:
+  plex_claim:
+    file: ./plex_claim
+
+networks:
+  proxy:
+    external: true

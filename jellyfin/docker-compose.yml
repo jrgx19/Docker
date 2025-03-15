@@ -1,0 +1,43 @@
+services:
+  jellyfin:
+    container_name: jellyfin
+    image: lscr.io/linuxserver/jellyfin:${JELLYFIN_DOCKER_TAG-latest}
+    security_opt:
+    - no-new-privileges:true       
+    env_file:
+      - .env
+      - ../.env
+    volumes:
+      - ./config:/config
+      - /media/media/streams/tv:/tv
+      - /media/media/streams/movies:/movies
+      - /dev/shm:/transcode #cache transcoding in RAM for better performance. Ensure the '/transcode' directory is selected in the application settings
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities:
+                - gpu      
+    networks:
+      - proxy
+    ports:
+      # - ${JELLYFIN_HTTP_PORT-8096}:8096
+      # - ${JELLYFIN_HTTPS_PORT-8920}:8920 #https
+      - 7359:7359/udp #local network discovery
+      # - 1900:1900/udp #DNLA
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.jellyfin-rtr.entrypoints=websecure
+      - traefik.http.routers.jellyfin-rtr.rule=Host(`jellyfin.$DOMAINNAME`)
+      - traefik.http.routers.jellyfin-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.jellyfin-rtr.service=jellyfin-svc
+      - traefik.http.services.jellyfin-svc.loadbalancer.server.port=8096
+
+networks:
+  proxy:
+    external: true

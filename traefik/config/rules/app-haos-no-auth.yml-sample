@@ -1,0 +1,14 @@
+http:
+  routers:
+    haos-rtr:
+      rule: "Host(`ha.{{env "DOMAINNAME"}}`) || Host(`haos.{{env "DOMAINNAME"}}`)" 
+      entryPoints:
+        - websecure
+      middlewares:
+        - chain-no-auth
+      service: haos-svc
+  services:
+    haos-svc:
+      loadBalancer:
+        servers:
+          - url: "http://IP_ADDRESS:8123"

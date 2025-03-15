@@ -1,0 +1,12 @@
+services:
+  generator:
+    image: wazuh/wazuh-certs-generator:0.0.2
+    hostname: wazuh-certs-generator
+    volumes:
+      - ./config/certs/:/certificates/
+      - ./config/certs.yml:/config/certs.yml
+    env_file:
+      - ../.env
+      - .env
+    environment:
+     -  HTTP_PROXY='https://wazuh.$DOMAINNAME'  

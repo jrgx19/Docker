@@ -1,0 +1,19 @@
+http:
+  routers:
+    unifi-rtr:
+      rule: "Host(`unifi.{{env "DOMAINNAME"}}`)"
+      entryPoints:
+        - websecure
+      middlewares:
+        - chain-no-auth
+      service: unifi-svc
+  services:
+    unifi-svc:
+      loadBalancer:
+        passHostHeader: true
+        serversTransport: "unifi"
+        servers:
+          - url: "https://IP_ADDRESS:8443/"
+  serversTransports:
+    unifi:
+      insecureSkipVerify: true

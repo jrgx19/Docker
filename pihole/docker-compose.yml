@@ -1,0 +1,35 @@
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:${PIHOLE_DOCKER_TAG-latest}
+    security_opt:
+    - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env
+    volumes:
+      - ./config:/etc/pihole
+    networks:
+      - proxy
+    hostname: pihole
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      # - ${PIHOLE_WEB_PORT-443}:443/tcp      
+    cap_add:
+      - SYS_NICE
+    restart: unless-stopped
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.pihole-rtr.entrypoints=websecure
+      - traefik.http.routers.pihole-rtr.rule=Host(`pihole.$DOMAINNAME`)
+      - traefik.http.routers.pihole-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.pihole-rtr.middlewares=pihole-redirect@file
+      - traefik.http.routers.pihole-rtr.service=pihole-svc
+      - traefik.http.services.pihole-svc.loadbalancer.server.port=443
+      - traefik.http.services.pihole-svc.loadbalancer.server.scheme=https       
+      - traefik.http.services.pihole-svc.loadbalancer.serversTransport=skipverify@file       
+
+networks:
+  proxy:
+    external: true

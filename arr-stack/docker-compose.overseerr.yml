@@ -1,0 +1,24 @@
+services:
+  overseerr:
+    image: lscr.io/linuxserver/overseerr:${OVERSEERR_DOCKER_TAG-latest}
+    container_name: overseerr
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env   
+    networks:
+      - proxy
+    # ports:
+    #   - ${OVERSEERR_PORT-5055}:5055
+    volumes:
+      - ./overseerr:/config
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.overseerr-rtr.entrypoints=websecure
+      - traefik.http.routers.overseerr-rtr.rule=Host(`overseerr.$DOMAINNAME`) || Host(`plexrequest.$DOMAINNAME`)
+      - traefik.http.routers.overseerr-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.overseerr-rtr.service=overseerr-svc
+      - traefik.http.services.overseerr-svc.loadbalancer.server.port=5055 
+    restart: unless-stopped

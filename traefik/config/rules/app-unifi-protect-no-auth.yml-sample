@@ -1,0 +1,18 @@
+http:
+  routers:
+    protect-rtr:
+      rule: "Host(`protect.{{env "DOMAINNAME"}}`)"
+      entryPoints:
+        - websecure
+      middlewares:
+        # - chain-no-auth
+      service: protect-svc
+  services:
+    protect-svc:
+      loadBalancer:
+        serversTransport: "protect"
+        servers:
+          - url: "https://IP_ADDRESS:7443"
+  serversTransports:
+    protect:
+      insecureSkipVerify: true

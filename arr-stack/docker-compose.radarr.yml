@@ -1,0 +1,26 @@
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:${RADARR_DOCKER_TAG-latest}
+    container_name: radarr
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+      - ../.env   
+    networks:
+      - proxy
+    # ports:
+    #   - ${RADARR_PORT-7878}:7878
+    volumes:
+      - ./radarr:/config
+      - /media/media/tv:/tv
+      - /media/downloads/data/complete:/data/complete
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.radarr-rtr.entrypoints=websecure
+      - traefik.http.routers.radarr-rtr.rule=Host(`radarr.$DOMAINNAME`)
+      - traefik.http.routers.radarr-rtr.middlewares=chain-no-auth@file
+      - traefik.http.routers.radarr-rtr.service=radarr-svc
+      - traefik.http.services.radarr-svc.loadbalancer.server.port=7878 
+    restart: unless-stopped
