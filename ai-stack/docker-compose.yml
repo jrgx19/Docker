@@ -54,6 +54,6 @@ networks:
     name: ollama
     ipam:
       config:
-        - subnet: 10.10.0.13/30
+        - subnet: 10.10.0.24/29
   proxy:
     external: true
